@@ -126,6 +126,8 @@ def collect_metrics(g, org_name, repo_names):
 
 def generate_report(metrics, output_file="metrics_report.md"):
     """Generate a markdown report from the collected metrics."""
+    import os
+    
     headers = ['Repository', 'Last Commit', 'Open Issues', 'Last Release', 'Contributors']
     table = tabulate(
         [[m[h] for h in headers] for m in metrics],
@@ -134,6 +136,9 @@ def generate_report(metrics, output_file="metrics_report.md"):
     )
     
     timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+    
+    # Create directory for output file if it doesn't exist
+    os.makedirs(os.path.dirname(output_file) if os.path.dirname(output_file) else '.', exist_ok=True)
     
     with open(output_file, 'w') as f:
         f.write(f"# Repository Metrics Report\n\n")
@@ -145,8 +150,12 @@ def generate_report(metrics, output_file="metrics_report.md"):
         
         # Calculate how many repos were updated in the last week
         one_week_ago = (datetime.datetime.now() - datetime.timedelta(days=7)).strftime('%Y-%m-%d')
-        active_repos = sum(1 for m in metrics if isinstance(m['Last Commit'], str) and m['Last Commit'] >= one_week_ago)
+        active_repos = sum(1 for m in metrics if isinstance(m['Last Commit'], str) 
+                           and not m['Last Commit'].startswith('Error')
+                           and m['Last Commit'].split(' by ')[0] >= one_week_ago)
         f.write(f"Repositories with commits in the last week: {active_repos}\n")
+    
+    print(f"Report generated: {output_file}")
 
 def main():
     import argparse

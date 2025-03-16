@@ -35,9 +35,14 @@ jobs:
           pip install PyGithub tabulate PyYAML
       
       - name: Run metrics collection
-        run: python scripts/collect_repo_metrics.py
+        run: |
+          echo "Starting metrics collection..."
+          echo "GitHub Repository: $GITHUB_REPOSITORY"
+          echo "Running with organization specified in config..."
+          python scripts/collect_repo_metrics.py --config config/repos.yaml
         env:
           GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
+          GITHUB_ORG: metricscollection
       
       - name: Save metrics to artifact
         uses: actions/upload-artifact@v4

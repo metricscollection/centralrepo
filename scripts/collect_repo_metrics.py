@@ -65,7 +65,7 @@ def collect_metrics(g, org_name, repo_names):
         try:
             repo = org.get_repo(repo_name)
             
-            # Get last commit date
+            # Get last commit date and author
             try:
                 # Try with per_page parameter (newer PyGithub versions)
                 commits = list(repo.get_commits(per_page=1))
@@ -73,11 +73,16 @@ def collect_metrics(g, org_name, repo_names):
                 # Fall back to older PyGithub versions without per_page
                 commits = list(repo.get_commits())[:1]
                 
-            last_commit_date = commits[0].commit.author.date if commits else "No commits"
-            
-            # Format the date
-            if isinstance(last_commit_date, datetime.datetime):
-                last_commit_date = last_commit_date.strftime('%Y-%m-%d %H:%M:%S')
+            if commits:
+                last_commit_date = commits[0].commit.author.date
+                # Get the author name from the commit
+                last_commit_author = commits[0].commit.author.name
+                # Format the date
+                if isinstance(last_commit_date, datetime.datetime):
+                    last_commit_date = last_commit_date.strftime('%Y-%m-%d %H:%M:%S')
+                last_commit_info = f"{last_commit_date} by {last_commit_author}"
+            else:
+                last_commit_info = "No commits"
             
             # Get number of open issues
             open_issues_count = repo.open_issues_count
@@ -98,7 +103,7 @@ def collect_metrics(g, org_name, repo_names):
             
             metrics.append({
                 'Repository': repo_name,
-                'Last Commit': last_commit_date,
+                'Last Commit': last_commit_info,
                 'Open Issues': open_issues_count,
                 'Last Release': last_release,
                 'Contributors': contributors_count

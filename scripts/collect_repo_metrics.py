@@ -63,6 +63,9 @@ def collect_metrics(g, org_name, repo_names):
         print(f"Processing repository: {repo_name}")
         
         try:
+            # Force refresh to get the latest data (disable cache)
+            g._Github__requester._Requester__connection.clear()
+            
             repo = org.get_repo(repo_name)
             
             # Get last commit date and author
@@ -164,7 +167,11 @@ def main():
     parser = argparse.ArgumentParser(description='Collect repository metrics')
     parser.add_argument('--org', help='GitHub organization name')
     parser.add_argument('--config', default='config/repos.yaml', help='Path to repository configuration file')
+    parser.add_argument('--refresh', help='Timestamp to force refresh (prevents caching)')
     args = parser.parse_args()
+    
+    if args.refresh:
+        print(f"Forcing refresh with timestamp: {args.refresh}")
     
     # Get GitHub token from environment
     token = os.environ.get('GITHUB_TOKEN')
@@ -172,8 +179,8 @@ def main():
         print("Error: GitHub token not found. Set the GITHUB_TOKEN environment variable.")
         return
     
-    # Initialize GitHub API client
-    g = Github(token)
+    # Initialize GitHub API client with per_page=1 to minimize API calls
+    g = Github(token, per_page=1)
     
     # Get organization name
     org_name = args.org or get_org_name_from_env()

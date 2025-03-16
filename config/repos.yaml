@@ -2,5 +2,4 @@
 # Format: one repository name per line
 
 repos:
-  - frontend-app
-  - backend-api
+  - monitoringrepo01

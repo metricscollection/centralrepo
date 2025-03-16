@@ -44,7 +44,7 @@ jobs:
           echo "Running with organization specified in config..."
           python scripts/collect_repo_metrics.py --config config/repos.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
           GITHUB_ORG: metricscollection
       
       - name: Save metrics to artifact
@@ -63,6 +63,12 @@ jobs:
           # First, reset the repo to make sure we're working with a clean state
           git fetch origin
           git reset --hard origin/${GITHUB_REF#refs/heads/}
+          
+          # Check if metrics_report.md exists, create if it doesn't
+          if [ ! -f "metrics_report.md" ]; then
+            echo "# Repository Metrics Report" > metrics_report.md
+            echo "Initial report creation" >> metrics_report.md
+          fi
           
           # Add metrics report to a clean working directory
           git add metrics_report.md

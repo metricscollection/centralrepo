@@ -66,7 +66,13 @@ def collect_metrics(g, org_name, repo_names):
             repo = org.get_repo(repo_name)
             
             # Get last commit date
-            commits = list(repo.get_commits(per_page=1))
+            try:
+                # Try with per_page parameter (newer PyGithub versions)
+                commits = list(repo.get_commits(per_page=1))
+            except TypeError:
+                # Fall back to older PyGithub versions without per_page
+                commits = list(repo.get_commits())[:1]
+                
             last_commit_date = commits[0].commit.author.date if commits else "No commits"
             
             # Format the date
@@ -77,7 +83,13 @@ def collect_metrics(g, org_name, repo_names):
             open_issues_count = repo.open_issues_count
             
             # Get last release date if available
-            releases = list(repo.get_releases(per_page=1))
+            try:
+                # Try with per_page parameter (newer PyGithub versions)
+                releases = list(repo.get_releases(per_page=1))
+            except TypeError:
+                # Fall back to older PyGithub versions without per_page
+                releases = list(repo.get_releases())[:1]
+                
             last_release = releases[0].published_at.strftime('%Y-%m-%d %H:%M:%S') if releases else "No releases"
             
             # Get contributors count

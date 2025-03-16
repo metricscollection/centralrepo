@@ -1,10 +1,10 @@
 # Repository Metrics Report
 
-Generated on: 2025-03-16 05:39:25
+Generated on: 2025-03-16 05:40:51
 
-| Repository       | Last Commit                                                                   | Open Issues   | Last Release   | Contributors   |
-|------------------|-------------------------------------------------------------------------------|---------------|----------------|----------------|
-| monitoringrepo01 | Error: Repository.get_commits() got an unexpected keyword argument 'per_page' | Error         | Error          | Error          |
+| Repository       | Last Commit         |   Open Issues | Last Release   |   Contributors |
+|------------------|---------------------|---------------|----------------|----------------|
+| monitoringrepo01 | 2025-03-16 05:03:43 |             0 | No releases    |              1 |
 
 ## Summary
 

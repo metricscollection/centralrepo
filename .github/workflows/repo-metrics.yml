@@ -1,0 +1,48 @@
+name: Repository Metrics Tracker
+
+on:
+  # Run on any commit to main branch
+  push:
+    branches:
+      - main
+  # Allow manual trigger
+  workflow_dispatch:
+
+jobs:
+  track-metrics:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install PyGithub tabulate
+      
+      - name: Run metrics collection
+        run: python scripts/collect_repo_metrics.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+      
+      - name: Save metrics to artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: repository-metrics
+          path: metrics_report.md
+      
+      # Optional: Commit the results back to the repository
+      - name: Commit metrics report
+        if: success()
+        run: |
+          git config --local user.email "github-actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add metrics_report.md
+          git commit -m "Update repository metrics report" || echo "No changes to commit"
+          git push

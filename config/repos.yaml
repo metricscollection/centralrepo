@@ -1,0 +1,6 @@
+# List of repositories to track in the organization
+# Format: one repository name per line
+
+repos:
+  - frontend-app
+  - backend-api

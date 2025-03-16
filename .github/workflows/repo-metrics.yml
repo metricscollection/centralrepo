@@ -23,6 +23,9 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          clean: true  # Ensure a clean working copy
+          fetch-depth: 1  # Shallow clone for faster checkout
       
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -41,7 +44,7 @@ jobs:
           echo "Running with organization specified in config..."
           python scripts/collect_repo_metrics.py --config config/repos.yaml
         env:
-          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
           GITHUB_ORG: metricscollection
       
       - name: Save metrics to artifact
@@ -57,21 +60,13 @@ jobs:
           git config --local user.email "github-actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          # Stage the metrics report file
-          git add metrics_report.md
+          # First, reset the repo to make sure we're working with a clean state
+          git fetch origin
+          git reset --hard origin/${GITHUB_REF#refs/heads/}
           
-          # Stash any other changes to ensure clean working directory
-          git stash -u
-          
-          # Pull the latest changes
-          git pull origin ${GITHUB_REF#refs/heads/}
-          
-          # Apply stashed changes
-          git stash pop || true
-          
-          # Commit the changes
+          # Add metrics report to a clean working directory
           git add metrics_report.md
           git commit -m "Update repository metrics report" || echo "No changes to commit"
           
-          # Push changes
+          # Push changes directly
           git push origin HEAD:${GITHUB_REF#refs/heads/}

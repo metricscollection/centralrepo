@@ -42,9 +42,8 @@ jobs:
           echo "Starting metrics collection..."
           echo "GitHub Repository: $GITHUB_REPOSITORY"
           echo "Running with organization specified in config..."
-          # Force refresh timestamp to prevent caching
-          TIMESTAMP=$(date +%s)
-          python scripts/collect_repo_metrics.py --config config/repos.yaml --refresh $TIMESTAMP
+          # Run collection script
+          python scripts/collect_repo_metrics.py --config config/repos.yaml
           
           # Print the contents of the metrics report file
           echo "========== GENERATED METRICS REPORT =========="
@@ -60,36 +59,29 @@ jobs:
           name: repository-metrics
           path: metrics_report.md
       
-      # Commit the metrics report back to the repository
+      # Optional: Commit the results back to the repository
       - name: Commit metrics report
+        if: success()
         run: |
           git config --local user.email "github-actions@github.com"
           git config --local user.name "GitHub Actions"
           
-          echo "Current git status:"
-          git status
+          # First, reset the repo to make sure we're working with a clean state
+          git fetch origin
+          git reset --hard origin/${GITHUB_REF#refs/heads/}
           
-          # Make sure we're working with the latest files
-          git pull || true
-          
-          # Add and commit the metrics report
-          echo "Adding metrics_report.md to git"
-          git add metrics_report.md
-          
-          # Commit with timestamp to avoid identical commits
-          TIMESTAMP=$(date +%s)
-          git commit -m "Update repository metrics report [$TIMESTAMP]" || echo "No changes detected"
-          
-          # Push the changes
-          echo "Pushing changes to repository"
-          git push || echo "Push failed - trying with force"
-          
-          # If regular push fails, try with force
-          if [ $? -ne 0 ]; then
-            echo "Attempting force push..."
-            git push --force
+          # Check if metrics_report.md exists, create if it doesn't
+          if [ ! -f "metrics_report.md" ]; then
+            echo "# Repository Metrics Report" > metrics_report.md
+            echo "Initial report creation" >> metrics_report.md
           fi
           
-          # Verify the push was successful
-          echo "Final git status:"
-          git status
+          # Add metrics report to a clean working directory
+          git add metrics_report.md
+          
+          # Add timestamp to commit message to avoid identical commits
+          TIMESTAMP=$(date +%s)
+          git commit -m "Update repository metrics report [$TIMESTAMP]" || echo "No changes to commit"
+          
+          # Push changes directly
+          git push origin HEAD:${GITHUB_REF#refs/heads/} || git push --force origin HEAD:${GITHUB_REF#refs/heads/}

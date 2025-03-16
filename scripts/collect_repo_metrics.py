@@ -21,12 +21,43 @@ def load_repo_list(config_file="config/repos.yaml"):
 
 def get_org_name_from_env():
     """Get organization name from environment variable."""
-    return os.environ.get('GITHUB_REPOSITORY', '').split('/')[0]
+    repo_path = os.environ.get('GITHUB_REPOSITORY', '')
+    if '/' in repo_path:
+        org_name = repo_path.split('/')[0]
+        print(f"Detected organization name from GITHUB_REPOSITORY: {org_name}")
+        return org_name
+    
+    # If we can't get it from environment, try reading it from a config file
+    try:
+        with open("config/organization.yaml", 'r') as file:
+            config = yaml.safe_load(file)
+            org_name = config.get('organization', '')
+            if org_name:
+                print(f"Read organization name from config file: {org_name}")
+                return org_name
+    except FileNotFoundError:
+        pass
+    
+    # Fallback - you might want to replace this with your actual org name
+    print("Warning: Could not determine organization name from environment or config.")
+    print("Using command-line argument or falling back to default.")
+    return os.environ.get('GITHUB_ORG', 'defaultOrgName')
 
 def collect_metrics(g, org_name, repo_names):
     """Collect metrics for the specified repositories."""
     metrics = []
-    org = g.get_organization(org_name)
+    
+    print(f"Organization name: {org_name}")
+    
+    try:
+        org = g.get_organization(org_name)
+    except Exception as e:
+        print(f"Error accessing organization {org_name}: {str(e)}")
+        return [{'Repository': repo_name, 
+                'Last Commit': f'Org error: {str(e)}',
+                'Open Issues': 'Error', 
+                'Last Release': 'Error', 
+                'Contributors': 'Error'} for repo_name in repo_names]
     
     for repo_name in repo_names:
         print(f"Processing repository: {repo_name}")
@@ -68,7 +99,7 @@ def collect_metrics(g, org_name, repo_names):
             print(f"Error processing repository {repo_name}: {str(e)}")
             metrics.append({
                 'Repository': repo_name,
-                'Last Commit': 'Error',
+                'Last Commit': f'Error: {str(e)}',
                 'Open Issues': 'Error',
                 'Last Release': 'Error',
                 'Contributors': 'Error'
@@ -101,6 +132,14 @@ def generate_report(metrics, output_file="metrics_report.md"):
         f.write(f"Repositories with commits in the last week: {active_repos}\n")
 
 def main():
+    import argparse
+    
+    # Set up command line arguments
+    parser = argparse.ArgumentParser(description='Collect repository metrics')
+    parser.add_argument('--org', help='GitHub organization name')
+    parser.add_argument('--config', default='config/repos.yaml', help='Path to repository configuration file')
+    args = parser.parse_args()
+    
     # Get GitHub token from environment
     token = os.environ.get('GITHUB_TOKEN')
     if not token:
@@ -111,7 +150,7 @@ def main():
     g = Github(token)
     
     # Get organization name
-    org_name = get_org_name_from_env()
+    org_name = args.org or get_org_name_from_env()
     if not org_name:
         print("Error: Could not determine organization name.")
         return
@@ -119,7 +158,7 @@ def main():
     print(f"Collecting metrics for organization: {org_name}")
     
     # Load repository list
-    repo_names = load_repo_list()
+    repo_names = load_repo_list(args.config)
     if not repo_names:
         print("Error: No repositories found in configuration file.")
         return

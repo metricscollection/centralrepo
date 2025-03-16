@@ -56,7 +56,9 @@ jobs:
         run: |
           git config --local user.email "github-actions@github.com"
           git config --local user.name "GitHub Actions"
+          # Pull the latest changes with rebase strategy
+          git pull --rebase origin ${GITHUB_REF#refs/heads/}
           git add metrics_report.md
           git commit -m "Update repository metrics report" || echo "No changes to commit"
-          # Use the token with write permissions
-          git push origin HEAD:${GITHUB_REF}
+          # Push changes
+          git push origin HEAD:${GITHUB_REF#refs/heads/}

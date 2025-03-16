@@ -5,7 +5,10 @@ on:
   push:
     branches:
       - main
-  
+  # Run on schedule
+  schedule:
+    # Run daily at midnight
+    - cron: '0 0 * * *'
   # Allow manual trigger
   workflow_dispatch:
 
@@ -25,12 +28,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install PyGithub tabulate
+          pip install PyGithub tabulate PyYAML
       
       - name: Run metrics collection
         run: python scripts/collect_repo_metrics.py
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
       
       - name: Save metrics to artifact
         uses: actions/upload-artifact@v4

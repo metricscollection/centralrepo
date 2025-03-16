@@ -29,7 +29,7 @@ jobs:
       - name: Run metrics collection
         run: python scripts/collect_repo_metrics.py
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_API_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.API_TOKEN }}
       
       - name: Save metrics to artifact
         uses: actions/upload-artifact@v3

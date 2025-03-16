@@ -59,29 +59,12 @@ jobs:
           name: repository-metrics
           path: metrics_report.md
       
-      # Optional: Commit the results back to the repository
+      # Commit and push the metrics report
       - name: Commit metrics report
-        if: success()
-        run: |
-          git config --local user.email "github-actions@github.com"
-          git config --local user.name "GitHub Actions"
-          
-          # First, reset the repo to make sure we're working with a clean state
-          git fetch origin
-          git reset --hard origin/${GITHUB_REF#refs/heads/}
-          
-          # Check if metrics_report.md exists, create if it doesn't
-          if [ ! -f "metrics_report.md" ]; then
-            echo "# Repository Metrics Report" > metrics_report.md
-            echo "Initial report creation" >> metrics_report.md
-          fi
-          
-          # Add metrics report to a clean working directory
-          git add metrics_report.md
-          
-          # Add timestamp to commit message to avoid identical commits
-          TIMESTAMP=$(date +%s)
-          git commit -m "Update repository metrics report [$TIMESTAMP]" || echo "No changes to commit"
-          
-          # Push changes directly
-          git push origin HEAD:${GITHUB_REF#refs/heads/} || git push --force origin HEAD:${GITHUB_REF#refs/heads/}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "Update repository metrics report [CI]"
+          file_pattern: "metrics_report.md"
+          commit_user_name: "GitHub Actions"
+          commit_user_email: "github-actions@github.com"
+          push_options: "--force"

@@ -54,10 +54,18 @@ def collect_metrics(g, org_name, repo_names):
     except Exception as e:
         print(f"Error accessing organization {org_name}: {str(e)}")
         return [{'Repository': repo_name, 
+                'Owner': 'Error',
                 'Last Commit': f'Org error: {str(e)}',
                 'Open Issues': 'Error', 
-                'Last Release': 'Error', 
+                'Last Release': 'Error',
+                'Commits (Week)': 'Error',
+                'Commits (Month)': 'Error',
                 'Contributors': 'Error'} for repo_name in repo_names]
+    
+    # Get current date for time-based calculations
+    current_time = datetime.datetime.now()
+    one_week_ago = current_time - datetime.timedelta(days=7)
+    one_month_ago = current_time - datetime.timedelta(days=30)
     
     for repo_name in repo_names:
         print(f"Processing repository: {repo_name}")
@@ -65,6 +73,9 @@ def collect_metrics(g, org_name, repo_names):
         try:
             # Get repository with fresh data
             repo = org.get_repo(repo_name)
+            
+            # Get repository owner
+            repo_owner = repo.owner.login
             
             # Get last commit date and author
             try:
@@ -102,11 +113,32 @@ def collect_metrics(g, org_name, repo_names):
             contributors = list(repo.get_contributors())
             contributors_count = len(contributors)
             
+            # Count commits for past week and month
+            weekly_commits = 0
+            monthly_commits = 0
+            
+            # Get recent commits (limited to 100 to avoid excessive API calls)
+            try:
+                recent_commits = list(repo.get_commits(since=one_month_ago))[:100]
+                
+                for commit in recent_commits:
+                    commit_date = commit.commit.author.date
+                    if commit_date > one_week_ago:
+                        weekly_commits += 1
+                    monthly_commits += 1
+            except Exception as e:
+                print(f"Error getting commit counts: {str(e)}")
+                weekly_commits = "Error"
+                monthly_commits = "Error"
+            
             metrics.append({
                 'Repository': repo_name,
+                'Owner': repo_owner,
                 'Last Commit': last_commit_info,
                 'Open Issues': open_issues_count,
                 'Last Release': last_release,
+                'Commits (Week)': weekly_commits,
+                'Commits (Month)': monthly_commits,
                 'Contributors': contributors_count
             })
             
@@ -117,9 +149,12 @@ def collect_metrics(g, org_name, repo_names):
             print(f"Error processing repository {repo_name}: {str(e)}")
             metrics.append({
                 'Repository': repo_name,
+                'Owner': 'Error',
                 'Last Commit': f'Error: {str(e)}',
                 'Open Issues': 'Error',
                 'Last Release': 'Error',
+                'Commits (Week)': 'Error',
+                'Commits (Month)': 'Error',
                 'Contributors': 'Error'
             })
     
@@ -129,7 +164,7 @@ def generate_report(metrics, output_file="metrics_report.md"):
     """Generate a markdown report from the collected metrics."""
     import os
     
-    headers = ['Repository', 'Last Commit', 'Open Issues', 'Last Release', 'Contributors']
+    headers = ['Repository', 'Owner', 'Last Commit', 'Open Issues', 'Last Release', 'Commits (Week)', 'Commits (Month)', 'Contributors']
     table = tabulate(
         [[m[h] for h in headers] for m in metrics],
         headers=headers,
@@ -155,6 +190,14 @@ def generate_report(metrics, output_file="metrics_report.md"):
                            and not m['Last Commit'].startswith('Error')
                            and m['Last Commit'].split(' by ')[0] >= one_week_ago)
         f.write(f"Repositories with commits in the last week: {active_repos}\n")
+        
+        # Add total commit metrics
+        total_weekly_commits = sum(m['Commits (Week)'] for m in metrics 
+                                  if isinstance(m['Commits (Week)'], int))
+        total_monthly_commits = sum(m['Commits (Month)'] for m in metrics 
+                                   if isinstance(m['Commits (Month)'], int))
+        f.write(f"Total commits in the last week: {total_weekly_commits}\n")
+        f.write(f"Total commits in the last month: {total_monthly_commits}\n")
     
     print(f"Report generated: {output_file}")
 

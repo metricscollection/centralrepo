@@ -11,6 +11,7 @@ import yaml
 import datetime
 import time
 import argparse
+import traceback
 from github import Github
 import github
 from tabulate import tabulate
@@ -115,33 +116,63 @@ def collect_metrics(g, org_name, repo_names):
             contributors = list(repo.get_contributors())
             contributors_count = len(contributors)
             
-            # Count commits for past week and month - simplified approach
+            # Count commits for past week and month - direct approach
             try:
                 print(f"Counting commits for {repo_name}...")
                 
-                # Simple approach - just get all commits and count manually
-                all_commits = list(repo.get_commits())
-                print(f"Retrieved {len(all_commits)} total commits for {repo_name}")
-                
-                # Count commits in time windows
-                now = datetime.datetime.now()
+                # Get the current time in UTC to match GitHub's timestamp format
+                now = datetime.datetime.now(datetime.timezone.utc)
                 week_ago = now - datetime.timedelta(days=7)
                 month_ago = now - datetime.timedelta(days=30)
                 
+                # For debugging
+                print(f"Current time (UTC): {now}")
+                print(f"Week ago (UTC): {week_ago}")
+                print(f"Month ago (UTC): {month_ago}")
+                
+                # Directly count all commits in the repo
+                all_commits = []
+                try:
+                    # Try to get all commits
+                    all_commits = list(repo.get_commits())
+                    print(f"Total commits retrieved: {len(all_commits)}")
+                    
+                    # Print the first commit date for debugging
+                    if all_commits:
+                        first_commit = all_commits[0]
+                        print(f"First commit date: {first_commit.commit.author.date}")
+                        print(f"First commit date type: {type(first_commit.commit.author.date)}")
+                except Exception as e:
+                    print(f"Error retrieving all commits: {e}")
+                
+                # Count commits manually by date
                 weekly_commits = 0
                 monthly_commits = 0
                 
                 for commit in all_commits:
-                    commit_date = commit.commit.author.date
-                    if commit_date >= month_ago:
-                        monthly_commits += 1
-                        if commit_date >= week_ago:
-                            weekly_commits += 1
+                    try:
+                        commit_date = commit.commit.author.date
+                        print(f"Comparing commit date {commit_date} with thresholds")
+                        
+                        # Make sure we have proper timezone-aware objects for comparison
+                        if commit_date.tzinfo is None:
+                            commit_date = commit_date.replace(tzinfo=datetime.timezone.utc)
+                        
+                        if commit_date >= month_ago:
+                            monthly_commits += 1
+                            print(f"Adding to monthly count, now: {monthly_commits}")
+                            if commit_date >= week_ago:
+                                weekly_commits += 1
+                                print(f"Adding to weekly count, now: {weekly_commits}")
+                    except Exception as e:
+                        print(f"Error processing commit date: {e}")
                 
-                print(f"Found {weekly_commits} weekly commits and {monthly_commits} monthly commits for {repo_name}")
-                
+                print(f"Final count for {repo_name}: {weekly_commits} weekly and {monthly_commits} monthly commits")
+            
             except Exception as e:
-                print(f"Error counting commits for {repo_name}: {str(e)}")
+                print(f"Error in commit counting: {str(e)}")
+                traceback = __import__('traceback').format_exc()
+                print(f"Traceback: {traceback}")
                 weekly_commits = 0
                 monthly_commits = 0
             

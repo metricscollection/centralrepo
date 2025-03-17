@@ -117,19 +117,33 @@ def collect_metrics(g, org_name, repo_names):
             weekly_commits = 0
             monthly_commits = 0
             
-            # Get recent commits (limited to 100 to avoid excessive API calls)
+            # Get recent commits using date parameters
             try:
-                recent_commits = list(repo.get_commits(since=one_month_ago))[:100]
+                # Convert datetime objects to string in ISO format for GitHub API
+                since_month = one_month_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
+                since_week = one_week_ago.strftime('%Y-%m-%dT%H:%M:%SZ')
                 
-                for commit in recent_commits:
-                    commit_date = commit.commit.author.date
-                    if commit_date > one_week_ago:
-                        weekly_commits += 1
-                    monthly_commits += 1
+                # Get monthly commits
+                try:
+                    monthly_commits_list = list(repo.get_commits(since=since_month))
+                    monthly_commits = len(monthly_commits_list)
+                except TypeError:
+                    # Fallback if per_page is not supported or other type error
+                    # Just get all commits and count them later
+                    all_commits = list(repo.get_commits())
+                    monthly_commits = sum(1 for c in all_commits if c.commit.author.date >= one_month_ago)
+                    weekly_commits = sum(1 for c in all_commits if c.commit.author.date >= one_week_ago)
+                
+                # If we've gotten monthly commits but not weekly yet
+                if weekly_commits == 0 and isinstance(monthly_commits, int):
+                    # Count weekly from monthly list to avoid extra API calls
+                    weekly_commits = sum(1 for c in monthly_commits_list 
+                                        if c.commit.author.date >= one_week_ago)
             except Exception as e:
-                print(f"Error getting commit counts: {str(e)}")
-                weekly_commits = "Error"
-                monthly_commits = "Error"
+                print(f"Error getting commit counts for {repo_name}: {str(e)}")
+                # Don't fail the whole process, just mark these as unknown
+                weekly_commits = 0
+                monthly_commits = 0
             
             metrics.append({
                 'Repository': repo_name,
@@ -153,8 +167,8 @@ def collect_metrics(g, org_name, repo_names):
                 'Last Commit': f'Error: {str(e)}',
                 'Open Issues': 'Error',
                 'Last Release': 'Error',
-                'Commits (Week)': 'Error',
-                'Commits (Month)': 'Error',
+                'Commits (Week)': 0,
+                'Commits (Month)': 0,
                 'Contributors': 'Error'
             })
     
@@ -163,6 +177,13 @@ def collect_metrics(g, org_name, repo_names):
 def generate_report(metrics, output_file="metrics_report.md"):
     """Generate a markdown report from the collected metrics."""
     import os
+    
+    # Make sure all metrics have valid values
+    for m in metrics:
+        # Set numeric types to 0 if they have errors
+        for key in ['Commits (Week)', 'Commits (Month)']:
+            if not isinstance(m.get(key), int):
+                m[key] = 0
     
     headers = ['Repository', 'Owner', 'Last Commit', 'Open Issues', 'Last Release', 'Commits (Week)', 'Commits (Month)', 'Contributors']
     table = tabulate(

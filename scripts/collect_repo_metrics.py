@@ -63,7 +63,10 @@ def collect_metrics(g, org_name, repo_names):
                 'Last Release': 'Error',
                 'Commits (Week)': 0,
                 'Commits (Month)': 0,
-                'Contributors': 'Error'} for repo_name in repo_names]
+                'Contributors': 'Error',
+                'Snyk Scans': 'Pending Implementation',
+                'RL Scans': 'Pending Implementation',
+                'Semgrep Scans': 'Pending Implementation'} for repo_name in repo_names]
     
     # Get current date for time-based calculations
     current_time = datetime.datetime.now()
@@ -175,6 +178,37 @@ def collect_metrics(g, org_name, repo_names):
                 print(f"Traceback: {traceback}")
                 weekly_commits = 0
                 monthly_commits = 0
+                
+            # Check for security scan configuration file
+            scan_config = {
+                'snyk': 'Pending Implementation', 
+                'rl': 'Pending Implementation', 
+                'semgrep': 'Pending Implementation'
+            }
+            
+            try:
+                # Check if security_scans.yaml exists
+                try:
+                    scan_file_content = repo.get_contents("security_scans.yaml").decoded_content.decode('utf-8')
+                    print(f"Found security_scans.yaml in {repo_name}")
+                    
+                    # Parse YAML content
+                    scan_yaml = yaml.safe_load(scan_file_content)
+                    
+                    # Extract scan settings
+                    if scan_yaml and 'scans' in scan_yaml:
+                        scans = scan_yaml['scans']
+                        scan_config['snyk'] = "Enabled" if scans.get('snyk', False) else "Disabled"
+                        scan_config['rl'] = "Enabled" if scans.get('rl', False) else "Disabled"
+                        scan_config['semgrep'] = "Enabled" if scans.get('semgrep', False) else "Disabled"
+                
+                except Exception as e:
+                    print(f"Could not find or parse security_scans.yaml in {repo_name}: {str(e)}")
+                    # Leave default 'Pending Implementation' values
+            
+            except Exception as e:
+                print(f"Error checking scan configuration: {str(e)}")
+                # Leave default 'Pending Implementation' values
             
             metrics.append({
                 'Repository': repo_name,
@@ -184,7 +218,10 @@ def collect_metrics(g, org_name, repo_names):
                 'Last Release': last_release,
                 'Commits (Week)': weekly_commits,
                 'Commits (Month)': monthly_commits,
-                'Contributors': contributors_count
+                'Contributors': contributors_count,
+                'Snyk Scans': scan_config['snyk'],
+                'RL Scans': scan_config['rl'],
+                'Semgrep Scans': scan_config['semgrep']
             })
             
             # Avoid rate limiting
@@ -200,7 +237,10 @@ def collect_metrics(g, org_name, repo_names):
                 'Last Release': 'Error',
                 'Commits (Week)': 0,
                 'Commits (Month)': 0,
-                'Contributors': 'Error'
+                'Contributors': 'Error',
+                'Snyk Scans': 'Pending Implementation',
+                'RL Scans': 'Pending Implementation',
+                'Semgrep Scans': 'Pending Implementation'
             })
     
     return metrics
@@ -216,7 +256,12 @@ def generate_report(metrics, output_file="metrics_report.md"):
             if not isinstance(m.get(key), int):
                 m[key] = 0
     
-    headers = ['Repository', 'Owner', 'Last Commit', 'Open Issues', 'Last Release', 'Commits (Week)', 'Commits (Month)', 'Contributors']
+    headers = [
+        'Repository', 'Owner', 'Last Commit', 'Open Issues', 'Last Release', 
+        'Commits (Week)', 'Commits (Month)', 'Contributors',
+        'Snyk Scans', 'RL Scans', 'Semgrep Scans'
+    ]
+    
     table = tabulate(
         [[m[h] for h in headers] for m in metrics],
         headers=headers,
@@ -250,6 +295,21 @@ def generate_report(metrics, output_file="metrics_report.md"):
                                    if isinstance(m['Commits (Month)'], int))
         f.write(f"Total commits in the last week: {total_weekly_commits}\n")
         f.write(f"Total commits in the last month: {total_monthly_commits}\n")
+        
+        # Add scan implementation stats
+        snyk_enabled = sum(1 for m in metrics if m['Snyk Scans'] == 'Enabled')
+        rl_enabled = sum(1 for m in metrics if m['RL Scans'] == 'Enabled')
+        semgrep_enabled = sum(1 for m in metrics if m['Semgrep Scans'] == 'Enabled')
+        
+        pending_scans = sum(1 for m in metrics if m['Snyk Scans'] == 'Pending Implementation' 
+                           or m['RL Scans'] == 'Pending Implementation'
+                           or m['Semgrep Scans'] == 'Pending Implementation')
+        
+        f.write(f"\n## Security Scan Status\n\n")
+        f.write(f"Repositories with Snyk enabled: {snyk_enabled}/{len(metrics)}\n")
+        f.write(f"Repositories with RevealLogic enabled: {rl_enabled}/{len(metrics)}\n")
+        f.write(f"Repositories with Semgrep enabled: {semgrep_enabled}/{len(metrics)}\n")
+        f.write(f"Repositories pending scan implementation: {pending_scans}/{len(metrics)}\n")
     
     print(f"Report generated: {output_file}")
 

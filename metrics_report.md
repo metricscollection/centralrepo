@@ -1,12 +1,12 @@
 # Repository Metrics Report
 
-Generated on: 2025-03-17 09:39:56
+Generated on: 2025-03-17 09:42:48
 
-| Repository       | Owner             | Last Commit                           |   Open Issues | Last Release   | Commits (Week)   | Commits (Month)   |   Contributors |
+| Repository       | Owner             | Last Commit                           |   Open Issues | Last Release   |   Commits (Week) |   Commits (Month) |   Contributors |
 |------------------|-------------------|---------------------------------------|---------------|----------------|------------------|-------------------|----------------|
-| monitoringrepo01 | metricscollection | 2025-03-16 06:06:04 by Saurabh bhatia |             1 | No releases    | Error            | Error             |              1 |
-| monitoringrepo02 | metricscollection | 2025-03-17 08:16:51 by Saurabh bhatia |             0 | No releases    | Error            | Error             |              1 |
-| centralrepo      | metricscollection | 2025-03-17 09:38:58 by Saurabh bhatia |             0 | No releases    | Error            | Error             |              1 |
+| monitoringrepo01 | metricscollection | 2025-03-16 06:06:04 by Saurabh bhatia |             1 | No releases    |                0 |                 0 |              1 |
+| monitoringrepo02 | metricscollection | 2025-03-17 08:16:51 by Saurabh bhatia |             0 | No releases    |                0 |                 0 |              1 |
+| centralrepo      | metricscollection | 2025-03-17 09:42:01 by Saurabh bhatia |             0 | No releases    |                0 |                 0 |              1 |
 
 ## Summary
 

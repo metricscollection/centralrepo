@@ -115,9 +115,11 @@ def collect_metrics(g, org_name, repo_names):
                 
             last_release = releases[0].published_at.strftime('%Y-%m-%d %H:%M:%S') if releases else "No releases"
             
-            # Get contributors count
+            # Get contributors count and add link
             contributors = list(repo.get_contributors())
             contributors_count = len(contributors)
+            contributors_url = f"https://github.com/{repo_owner}/{repo_name}/graphs/contributors"
+            contributors_with_link = f"[{contributors_count}]({contributors_url})"
             
             # Count commits for past week and month - direct approach
             try:
@@ -210,15 +212,19 @@ def collect_metrics(g, org_name, repo_names):
                 print(f"Error checking scan configuration: {str(e)}")
                 # Leave default 'Pending Implementation' values
             
+            # Create repository link
+            repo_url = f"https://github.com/{repo_owner}/{repo_name}"
+            repo_name_with_link = f"[{repo_name}]({repo_url})"
+            
             metrics.append({
-                'Repository': repo_name,
+                'Repository': repo_name_with_link,
                 'Owner': repo_owner,
                 'Last Commit': last_commit_info,
                 'Open Issues': open_issues_count,
                 'Last Release': last_release,
                 'Commits (Week)': weekly_commits,
                 'Commits (Month)': monthly_commits,
-                'Contributors': contributors_count,
+                'Contributors': contributors_with_link,
                 'Snyk Scans': scan_config['snyk'],
                 'RL Scans': scan_config['rl'],
                 'Semgrep Scans': scan_config['semgrep']
@@ -248,6 +254,7 @@ def collect_metrics(g, org_name, repo_names):
 def generate_report(metrics, output_file="metrics_report.md"):
     """Generate a markdown report from the collected metrics."""
     import os
+    import re
     
     # Make sure all metrics have valid values
     for m in metrics:
@@ -295,6 +302,21 @@ def generate_report(metrics, output_file="metrics_report.md"):
                                    if isinstance(m['Commits (Month)'], int))
         f.write(f"Total commits in the last week: {total_weekly_commits}\n")
         f.write(f"Total commits in the last month: {total_monthly_commits}\n")
+        
+        # Count total contributors across all repos
+        # Need to extract numbers from markdown links [X](url)
+        total_contributors = 0
+        for m in metrics:
+            contributor_val = m['Contributors']
+            if isinstance(contributor_val, str) and '[' in contributor_val:
+                # Extract number from markdown link [X](url)
+                match = re.search(r'\[(\d+)\]', contributor_val)
+                if match:
+                    total_contributors += int(match.group(1))
+            elif isinstance(contributor_val, int):
+                total_contributors += contributor_val
+        
+        f.write(f"Total contributors across all repositories: {total_contributors}\n")
         
         # Add scan implementation stats
         snyk_enabled = sum(1 for m in metrics if m['Snyk Scans'] == 'Enabled')

@@ -1,19 +1,19 @@
 # Repository Metrics Report
 
-Generated on: 2025-03-28 01:19:17
+Generated on: 2025-03-29 01:18:46
 
 | Repository       | Owner             | Last Commit                           |   Open Issues | Last Release   |   Commits (Week) |   Commits (Month) |   Contributors | Snyk Scans             | RL Scans               | Semgrep Scans          |
 |------------------|-------------------|---------------------------------------|---------------|----------------|------------------|-------------------|----------------|------------------------|------------------------|------------------------|
 | monitoringrepo01 | metricscollection | 2025-03-16 06:06:04 by Saurabh bhatia |             1 | No releases    |                0 |                 4 |              1 | Pending Implementation | Pending Implementation | Pending Implementation |
 | monitoringrepo02 | metricscollection | 2025-03-17 09:58:03 by Saurabh bhatia |             0 | No releases    |                0 |                 4 |              1 | Enabled                | Disabled               | Enabled                |
-| centralrepo      | metricscollection | 2025-03-27 01:19:21 by saurabh1611    |             0 | No releases    |                7 |                64 |              1 | Pending Implementation | Pending Implementation | Pending Implementation |
+| centralrepo      | metricscollection | 2025-03-28 01:19:18 by saurabh1611    |             0 | No releases    |                6 |                65 |              1 | Pending Implementation | Pending Implementation | Pending Implementation |
 
 ## Summary
 
 Total repositories: 3
 Repositories with commits in the last week: 1
-Total commits in the last week: 7
-Total commits in the last month: 72
+Total commits in the last week: 6
+Total commits in the last month: 73
 
 ## Security Scan Status
 
